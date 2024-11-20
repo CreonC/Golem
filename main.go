@@ -457,6 +457,7 @@ func startServer() error {
 	}
 
 	// Start a new command window for the server
+	// FIXME: Windows only, will not work on other platforms
 	cmd := exec.Command("cmd", "/c", "start", "Minecraft Server", "/wait", config.JavaPath)
 	cmd.Dir = config.ServerPath
 	cmd.Args = append(cmd.Args, javaArgs...)
