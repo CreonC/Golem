@@ -572,6 +572,7 @@ func restartServer() error {
 
 func fetchJSON(url string, target interface{}) error {
 	resp, err := http.Get(url)
+	resp.Header.Set("User-Agent", "Golem/0.1.0 (https://github.com/CreonC/Golem)")
 	if err != nil {
 		return err
 	}
@@ -587,7 +588,7 @@ func fetchJSON(url string, target interface{}) error {
 	}
 
 	// Add a newline after the progress bar to prevent it being mixed together
-	fmt.Println()
+	fmt.Println("\n")
 
 	// Decode from the buffer
 	return json.NewDecoder(&buf).Decode(target)
@@ -595,6 +596,7 @@ func fetchJSON(url string, target interface{}) error {
 
 func downloadFile(url, filepath string) error {
 	resp, err := http.Get(url)
+	resp.Header.Set("User-Agent", "Golem/0.1.0 (https://github.com/CreonC/Golem)")
 	if err != nil {
 		return err
 	}
@@ -620,7 +622,7 @@ func downloadFile(url, filepath string) error {
 	}
 
 	// Add a newline after the progress bar to prevent it being mixed together
-	fmt.Println()
+	fmt.Println("\n")
 
 	return nil
 }

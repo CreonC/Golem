@@ -10,7 +10,7 @@ A powerful command-line tool for managing and developing Minecraft servers with 
   - Spigot
   - Purpur
 - 🔄 Automatic server updates
-- 🛠️ Plugin development mode with hot-reloading
+- 🛠️ Plugin development mode with live-reloading
 - ⚙️ Flexible configuration system
 - 🎮 Server management commands (start, stop, restart)
 - 📦 Easy EULA acceptance
