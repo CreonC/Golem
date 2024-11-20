@@ -1,0 +1,10 @@
+{
+    "serverType": "paper",
+    "serverVersion": "1.21.3",
+    "buildNumber": 44,
+    "javaPath": "java",
+    "minRam": "1G",
+    "maxRam": "4G",
+    "serverPath": "./server",
+    "allowExperimentalBuilds": true
+}
