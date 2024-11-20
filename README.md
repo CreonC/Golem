@@ -92,4 +92,3 @@ Create a `golem-config.json` file with the following structure:
 
 - **Live Reloading**: When using the `--watch` flag, Golem automatically detects changes in your plugin directory and restarts the server to apply the changes.
 - **Build Integration**: Automatically copies new plugin builds to the server's plugins directory.
-- **Server Management**: Provides commands for starting, stopping, and restarting the server during development.
