@@ -18,7 +18,7 @@ A powerful command-line tool for managing and developing Minecraft (plugins) ser
 
 ## Quick Start
 
-1. Download the latest Golem release
+1. Download the latest Golem release (There's none, you'll have to build it yourself)
 2. Create a configuration file (config.json)
 3. Run Golem:
 ```bash
