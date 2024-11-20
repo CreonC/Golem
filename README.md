@@ -70,7 +70,7 @@ Create a `config.json` file with the following structure:
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| serverType | Type of server (paper/vanilla/spigot/purpur) | paper |
+| serverType | Type of server (paper/vanilla/purpur) | paper |
 | serverVersion | Minecraft version | latest |
 | buildNumber | Build number for the server (if applicable) | latest |
 | javaPath | Path to Java executable | "java" |

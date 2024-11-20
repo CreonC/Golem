@@ -312,11 +312,6 @@ func updatePaperLike() error {
 	return acceptEULA()
 }
 
-func updateSpigot() error {
-	// Implementation for Spigot update logic
-	return nil
-}
-
 func updateVanilla() error {
 	// Implementation for Vanilla update logic
 	return nil
@@ -328,7 +323,9 @@ func acceptEULA() error {
 	if err := os.WriteFile(eulaPath, []byte(content), 0644); err != nil {
 		return fmt.Errorf("failed to write eula.txt: %v", err)
 	}
-	log.Println("Minecraft EULA has been accepted automatically")
+	log.Println("By using this configuration, you are indicating your agreement to Minecraft's EULA.")
+	log.Println("See https://www.minecraft.net/en-us/eula for more information.")
+	log.Println("If you do not agree to the EULA above, please stop the server.")
 	return nil
 }
 
@@ -572,7 +569,6 @@ func restartServer() error {
 
 func fetchJSON(url string, target interface{}) error {
 	resp, err := http.Get(url)
-	resp.Header.Set("User-Agent", "Golem/0.1.0 (https://github.com/CreonC/Golem)")
 	if err != nil {
 		return err
 	}
@@ -596,7 +592,6 @@ func fetchJSON(url string, target interface{}) error {
 
 func downloadFile(url, filepath string) error {
 	resp, err := http.Get(url)
-	resp.Header.Set("User-Agent", "Golem/0.1.0 (https://github.com/CreonC/Golem)")
 	if err != nil {
 		return err
 	}
