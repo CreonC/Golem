@@ -1,13 +1,12 @@
 # Golem
 
-A powerful command-line tool for managing and developing Minecraft servers with ease. Golem automates the process of downloading, configuring, and maintaining various types of Minecraft servers, making server management and plugin development more efficient.
+A powerful command-line tool for managing and developing Minecraft (plugins) servers with ease. Golem automates the process of downloading, configuring, and maintaining various types of Minecraft servers, making server management and plugin development more efficient.
 
 ## Features
 
 - 🚀 Supports multiple server types:
   - Paper
   - Vanilla
-  - Spigot
   - Purpur
 - 🔄 Automatic server updates
 - 🛠️ Plugin development mode with live-reloading
