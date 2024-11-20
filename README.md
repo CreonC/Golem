@@ -11,7 +11,7 @@ A powerful command-line tool for managing and developing Minecraft (plugins) ser
 - 🚀 Supports multiple server types:
   - Paper
   - Vanilla --SOON
-  - Purpur  --SOON
+  - Purpur
 - 🔄 Automatic server updates (and plugins in the future)
 - 🛠️ Plugin development mode with live-reloading
 - ⚙️ Flexible configuration system
