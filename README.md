@@ -1,18 +1,20 @@
 # Golem
 
+> [!IMPORTANT]
+> While most of Golem's features are tested (?) and work as expected, there may be some bugs and unexpected behavior. Use at your own risk.
+> I'm too lazy to write unit tests for now.
+
 A powerful command-line tool for managing and developing Minecraft (plugins) servers with ease. Golem automates the process of downloading, configuring, and maintaining various types of Minecraft servers, making server management and plugin development more efficient.
 
 ## Features
 
 - 🚀 Supports multiple server types:
   - Paper
-  - Vanilla
-  - Purpur
-- 🔄 Automatic server updates
+  - Vanilla --SOON
+  - Purpur  --SOON
+- 🔄 Automatic server updates (and plugins in the future)
 - 🛠️ Plugin development mode with live-reloading
 - ⚙️ Flexible configuration system
-- 🎮 Server management commands (start, stop, restart)
-- 📦 Easy EULA acceptance
 
 ## Quick Start
 
