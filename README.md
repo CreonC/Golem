@@ -51,7 +51,7 @@ golem --auto-start --watch path/to/plugin/directory
 
 ## Configuration
 
-Create a `config.json` file with the following structure:
+Create a `golem-config.json` file with the following structure:
 
 ```json
 {
