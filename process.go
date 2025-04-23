@@ -3,17 +3,72 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
+
+	"github.com/chzyer/readline"
 )
 
 // Variables for handling console output
 var outputMutex sync.Mutex
 var promptActive bool
+var instance *readline.Instance
+var processDown chan struct{} // Channel to signal when the server process has exited
+
+// No problematic server-side tab completion
+
+// GolemCompleter implements the readline.AutoCompleter interface for tab completion
+type GolemCompleter struct{}
+
+// Do implements tab completion for Golem commands and basic Minecraft commands
+func (c *GolemCompleter) Do(line []rune, pos int) ([][]rune, int) {
+	lineStr := string(line[:pos])
+	prefix := lineStr
+	
+	// Golem commands start with !
+	if strings.HasPrefix(lineStr, "!") {
+		// List of all Golem commands
+		commands := []string{
+			"!help", "!exit", "!stop", "!restart",
+		}
+		
+		matched := [][]rune{}
+		for _, cmd := range commands {
+			if strings.HasPrefix(cmd, lineStr) {
+				matched = append(matched, []rune(strings.TrimPrefix(cmd, lineStr)))
+			}
+		}
+		
+		return matched, len(prefix)
+	}
+	
+	// For Minecraft commands, use a client-side list of common commands
+	// List of common Minecraft server commands
+	minecraftCommands := []string{
+		"ban", "ban-ip", "banlist", "clear", "deop", "difficulty", "effect", 
+		"enchant", "gamemode", "gamerule", "give", "help", "kick", "kill", 
+		"list", "me", "op", "pardon", "pardon-ip", "plugins", "reload", 
+		"save-all", "save-off", "save-on", "say", "scoreboard", "seed", 
+		"setidletimeout", "setworldspawn", "spawnpoint", "stop", "tell", 
+		"teleport", "time", "timings", "tp", "version", "weather", "whitelist",
+		"world", "xp",
+	}
+	
+	matched := [][]rune{}
+	for _, cmd := range minecraftCommands {
+		if strings.HasPrefix(cmd, lineStr) {
+			matched = append(matched, []rune(strings.TrimPrefix(cmd, lineStr)))
+		}
+	}
+	
+	return matched, len(prefix)
+}
 
 // Helper function to print messages with proper prompt management
 func printWithPrompt(message string) {
@@ -87,97 +142,10 @@ func startServer() error {
 	serverProcess = cmd.Process
 	log.Printf("Server started with PID %d", serverProcess.Pid)
 
-	// NOW start the goroutines to capture output after the process is running
-	go func() {
-		scanner := bufio.NewScanner(stdout)
-		scanner.Buffer(make([]byte, 4096), 256*1024) // Increase buffer size
-		for scanner.Scan() {
-			printWithPrompt(fmt.Sprintf("[Server] %s", scanner.Text()))
-		}
-		if err := scanner.Err(); err != nil {
-			log.Printf("Error reading server stdout: %v", err)
-		}
-	}()
-
-	go func() {
-		scanner := bufio.NewScanner(stderr)
-		scanner.Buffer(make([]byte, 4096), 256*1024) // Increase buffer size
-		for scanner.Scan() {
-			printWithPrompt(fmt.Sprintf("[Server Error] %s", scanner.Text()))
-		}
-		if err := scanner.Err(); err != nil {
-			log.Printf("Error reading server stderr: %v", err)
-		}
-	}()
-
-	// Start a goroutine to handle user input
-	go func() {
-		scanner := bufio.NewScanner(os.Stdin)
-		
-		// Initial welcome message with synchronized output
-		outputMutex.Lock()
-		fmt.Println("\nGolem is now running. Type commands to send to Minecraft server.")
-		fmt.Println("Special Golem commands: !exit, !stop, !restart")
-		fmt.Print("golem> ")
-		promptActive = true
-		outputMutex.Unlock()
-		
-		for scanner.Scan() {
-			// Capture the input and clear prompt state
-			outputMutex.Lock()
-			text := scanner.Text()
-			promptActive = false
-			outputMutex.Unlock()
-			
-			// Process command
-			outputMutex.Lock()
-			// Handle special Golem commands
-			if text == "!help" {
-				fmt.Println("\nGolem Commands:")
-				fmt.Println("  !help     - Display this help message")
-				fmt.Println("  !exit     - Stop the server and exit Golem")
-				fmt.Println("  !stop     - Stop the server but keep Golem running")
-				fmt.Println("  !restart  - Restart the Minecraft server")
-				fmt.Println("\nAll other commands are sent directly to the Minecraft server.")
-				outputMutex.Unlock()
-			} else if text == "!exit" {
-				fmt.Println("Stopping server and exiting Golem...")
-				outputMutex.Unlock()
-				stopServer()
-				os.Exit(0)
-			} else if text == "!stop" {
-				fmt.Println("Stopping server only...")
-				outputMutex.Unlock()
-				stopServer()
-			} else if text == "!restart" {
-				fmt.Println("Restarting server...")
-				outputMutex.Unlock()
-				restartServer()
-			} else {
-				// Send the command to the Minecraft server
-				outputMutex.Unlock()
-				_, err := serverStdin.Write([]byte(text + "\n"))
-				if err != nil {
-					printWithPrompt(fmt.Sprintf("Error sending command to server: %v", err))
-					// Continue so we still get the prompt back
-					outputMutex.Lock()
-				}
-			}
-			
-			// Reshow prompt if needed
-			if !promptActive {
-				outputMutex.Lock()
-				fmt.Print("golem> ")
-				promptActive = true
-				outputMutex.Unlock()
-			}
-		}
-		
-		if err := scanner.Err(); err != nil {
-			log.Printf("Error reading user input: %v", err)
-		}
-	}()
-	// Monitor the process in background
+	// Initialize the processDown channel
+	processDown = make(chan struct{})
+	
+	// Monitor the process in background first to signal other goroutines
 	go func() {
 		state, err := cmd.Process.Wait()
 		if err != nil {
@@ -187,9 +155,163 @@ func startServer() error {
 		} else {
 			log.Println("Server stopped gracefully")
 		}
+		
+		// Signal other goroutines to stop
+		close(processDown)
+		
+		// Clean up process variables
 		serverProcess = nil
 		serverStdin = nil
 	}()
+	
+	// NOW start the goroutines to capture output after the process is running
+	go func() {
+		defer func() {
+			// Recover from any panics that might occur if pipes are closed
+			if r := recover(); r != nil {
+				log.Printf("Recovered from panic in stdout reader: %v", r)
+			}
+		}()
+		
+		scanner := bufio.NewScanner(stdout)
+		scanner.Buffer(make([]byte, 4096), 256*1024) // Increase buffer size
+		
+		for {
+			select {
+			case <-processDown:
+				// Process is down, exit goroutine
+				return
+			default:
+				// Read next line if available
+				if !scanner.Scan() {
+					// End of output or error
+					if err := scanner.Err(); err != nil && err != io.EOF {
+						log.Printf("Error reading server stdout: %v", err)
+					}
+					return
+				}
+				printWithPrompt(fmt.Sprintf("[Server] %s", scanner.Text()))
+			}
+		}
+	}()
+	
+	go func() {
+		defer func() {
+			// Recover from any panics that might occur if pipes are closed
+			if r := recover(); r != nil {
+				log.Printf("Recovered from panic in stderr reader: %v", r)
+			}
+		}()
+		
+		scanner := bufio.NewScanner(stderr)
+		scanner.Buffer(make([]byte, 4096), 256*1024) // Increase buffer size
+		
+		for {
+			select {
+			case <-processDown:
+				// Process is down, exit goroutine
+				return
+			default:
+				// Read next line if available
+				if !scanner.Scan() {
+					// End of output or error
+					if err := scanner.Err(); err != nil && err != io.EOF {
+						log.Printf("Error reading server stderr: %v", err)
+					}
+					return
+				}
+				printWithPrompt(fmt.Sprintf("[Server Error] %s", scanner.Text()))
+			}
+		}
+	}()
+	
+	// Setup readline for tab completion and better input handling
+	var rlErr error
+	instance, rlErr = readline.NewEx(&readline.Config{
+		Prompt:       "golem> ",
+		AutoComplete: &GolemCompleter{},
+		// Prevent readline from directly exiting on Ctrl-C
+		InterruptPrompt: "^C",
+		EOFPrompt:      "exit",
+	})
+	if rlErr != nil {
+		return fmt.Errorf("failed to initialize readline: %v", rlErr)
+	}
+	
+	// Start a goroutine to handle user input with readline
+	go func() {
+		// Initial welcome message
+		fmt.Println("\nGolem is now running. Type commands to send to Minecraft server.")
+		fmt.Println("Special Golem commands: !help, !exit, !stop, !restart")
+		fmt.Println("Use TAB for command completion")
+		
+		defer instance.Close()
+		
+		for {
+			// Read a line with tab completion
+			line, err := instance.Readline()
+			if err != nil {
+				// Handle readline specific errors
+				if err == readline.ErrInterrupt {
+					// Ctrl-C pressed, but don't exit
+					continue
+				} else if err == io.EOF {
+					// EOF (Ctrl-D) - exit gracefully
+					fmt.Println("Exiting Golem...")
+					if serverProcess != nil {
+						stopServer()
+					}
+					os.Exit(0)
+				} else {
+					// Other error
+					log.Printf("Error reading input: %v", err)
+					break
+				}
+			}
+			
+			// Process command
+			// Handle special Golem commands
+			switch line {
+			case "!help":
+				fmt.Println("\nGolem Commands:")
+				fmt.Println("  !help     - Display this help message")
+				fmt.Println("  !exit     - Stop the server and exit Golem")
+				fmt.Println("  !stop     - Stop the server but keep Golem running")
+				fmt.Println("  !restart  - Restart the Minecraft server")
+				fmt.Println("\nAll other commands are sent directly to the Minecraft server.")
+				
+			case "!exit":
+				fmt.Println("Stopping server and exiting Golem...")
+				stopServer()
+				os.Exit(0)
+				
+			case "!stop":
+				fmt.Println("Stopping server only...")
+				stopServer()
+				
+			case "!restart":
+				fmt.Println("Restarting server...")
+				restartServer()
+				
+			default:
+				// Check if server is still running before sending commands
+				if serverProcess == nil || serverStdin == nil {
+					fmt.Println("Server is not running. Use !restart to start it again.")
+					continue
+				}
+				
+				// Send the command to the Minecraft server
+				_, err := serverStdin.Write([]byte(line + "\n"))
+				if err != nil {
+					fmt.Printf("Error sending command to server: %v\n", err)
+				}
+			}
+		}
+		
+		log.Println("Input handler exited")
+	}()
+// Process monitoring has been moved to the top of this function
+	// No need to monitor again here
 
 	return nil
 }
@@ -232,13 +354,28 @@ func stopServer() error {
 }
 
 func restartServer() error {
-	if err := stopServer(); err != nil {
-		return fmt.Errorf("failed to stop server: %v", err)
+	// Only try to stop if there's a server process running
+	if serverProcess != nil {
+		log.Println("Stopping server before restart...")
+		if err := stopServer(); err != nil {
+			// If it failed because there's no process, that's fine
+			if !strings.Contains(err.Error(), "no child processes") {
+				log.Printf("Warning during server stop: %v", err)
+			}
+		}
+		// Make sure these are nil to avoid issues
+		serverProcess = nil
+		serverStdin = nil
+	} else {
+		log.Println("No server process found to stop, starting fresh")
 	}
 
-	// Wait a bit for the server to fully stop
-	time.Sleep(5 * time.Second)
+	// Wait a bit for the server to fully stop and resources to be released
+	log.Println("Waiting 3 seconds before restart...")
+	time.Sleep(3 * time.Second)
 
+	// Start the server
+	log.Println("Starting server...")
 	if err := startServer(); err != nil {
 		return fmt.Errorf("failed to restart server: %v", err)
 	}
