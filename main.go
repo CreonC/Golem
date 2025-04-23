@@ -72,5 +72,10 @@ func main() {
 		if err := startServer(); err != nil {
 			log.Fatalf("Failed to start server: %v", err)
 		}
+		
+		// Block here to keep Golem running as a middleman
+		// This will only exit if the process is killed or an exit command is given
+		waitForExit := make(chan struct{})
+		<-waitForExit // This blocks forever until channel is closed
 	}
 }

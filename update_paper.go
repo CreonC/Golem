@@ -85,7 +85,7 @@ func updatePaper() error {
 	}
 
 	if buildInfo.Channel != "default" {
-		log.Printf("Warning: Using %s build %d. This build may contain bugs or unfinished features!",
+		log.Printf("Warning: Using %s build %d.",
 			buildInfo.Channel, latestBuild)
 	}
 
