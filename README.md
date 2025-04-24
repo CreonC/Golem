@@ -3,7 +3,7 @@
 > [!IMPORTANT] 
 > Plugin Live Reloading is for Development Only!
 >
-> Golem's live plugin reloading and auto-update features are intended strictly for development workflows. **Do not use this tool in production to perform automatic updates.** [PaperMC team discourages the use of automated update mechanisms][https://docs.papermc.io/misc/downloads-api/].
+> Golem's live plugin reloading and auto-update features are intended strictly for development workflows. **Do not use this tool in production to perform automatic updates.** [PaperMC discourages the use of automated update mechanisms](https://docs.papermc.io/misc/downloads-api/).
 
 Golem is a powerful command-line tool designed to streamline Minecraft plugin development. Its primary focus is to provide seamless **live reloading of plugins** during development, automatically detecting changes and restarting your server to reflect updates instantly.
 
