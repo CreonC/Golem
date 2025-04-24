@@ -1,45 +1,53 @@
 # Golem
 
-> [!IMPORTANT]
-> Please do not use this in production, auto update is discouraged by paper and updating the server is a side product of the plugin development mode.
+> [!IMPORTANT] Plugin Live Reloading is for Development Only!
+>
+> Golem's live plugin reloading and auto-update features are intended strictly for development workflows. **Do not use this tool in production to perform automatic updates.** [PaperMC team discourages the use of automated update mechanisms][https://docs.papermc.io/misc/downloads-api/].
 
-A powerful command-line tool for developing Minecraft (plugins) servers with ease. Golem automates the process of downloading, configuring, and maintaining servers, making plugin development more efficient.
+Golem is a powerful command-line tool designed to streamline Minecraft plugin development. Its primary focus is to provide seamless **live reloading of plugins** during development, automatically detecting changes and restarting your server to reflect updates instantly.
 
 ## Features
 
+- 🛠️ **Live Reloading for Plugin Development:**
+  - Instantly reload plugins on code changes with the `--watch` mode.
+  - Automatically copies new plugin builds to the server's plugins directory and restarts the server.
 - 🚀 Supports multiple server types:
   - Paper
   - Purpur
-- 🔄 Automatic server updates (to target the latest API version)
-- 🛠️ Plugin development mode with live-reloading
-- ⚙️ Flexible configuration system
+- 🔄 Automatic server updates (for development convenience only)
+
 
 ## Quick Start
 
-1. Download the latest Golem release (There's none, you'll have to build it yourself)
-2. Create a configuration file (config.json)
-3. Run Golem:
-4. Profit
+1. Build or download Golem (no official releases yet; build from source if needed)
+2. Place it in your plugin development workspace
+3. Create a `golem-config.json` file (see below)
+4. Start Golem in **live reload mode**:
+
 ```bash
-golem --auto-start
+golem --auto-start --watch ./build/libs
 ```
 
 ## Installation
 
-Download the latest release for your platform from the releases page and place it in your desired location.
+Clone or download this repository and build the binary for your platform. Place the executable in your plugin development directory.
 
-## Usage
+## Usage: Live Plugin Reloading (Development Mode)
 
-### For Plugin Developers
+The core feature of Golem is the **live plugin reloading mode**:
 
-Enable live-reloading of your plugin during development:
 ```bash
-golem --auto-start --watch path/to/plugin/directory (for example ./build/libs)
+golem --auto-start --watch path/to/plugin/directory
 ```
+
+- The `--watch` flag enables plugin development mode: Golem watches the specified directory for `.jar` changes, automatically copies updated plugins to your server's `plugins` folder, and restarts the server to apply changes.
+- The `--auto-start` flag ensures the server starts automatically after updates.
+
+> ⚠️ **Warning:** Do not use `--watch` or any auto-update features in production. This is for developer convenience only!
 
 ## Configuration
 
-Create a `golem-config.json` file with the following structure:
+Create a `golem-config.json` file in your project root. Example:
 
 ```json
 {
@@ -65,7 +73,7 @@ Create a `golem-config.json` file with the following structure:
 | minRam | Minimum RAM allocation | "1G" |
 | maxRam | Maximum RAM allocation | "4G" |
 | serverPath | Directory for server files | "./server" |
-| allowExperimentalBuilds | Allow experimental server builds | false |
+| allowExperimentalBuilds | Allow experimental server builds (paper) | false |
 
 ## Command Line Options
 
